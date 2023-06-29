@@ -35,7 +35,12 @@ var state = []string{
 func getAwsRegion(cfg *aws.Config) ([]string, error) {
 	client := ec2.NewFromConfig(*cfg)
 
-	obj, err := client.DescribeRegions(context.TODO(), &ec2.DescribeRegionsInput{})
+	retryOpt := func(opt *ec2.Options) {
+		opt.RetryMaxAttempts = 3
+		opt.RetryMode = aws.RetryModeStandard
+	}
+
+	obj, err := client.DescribeRegions(context.TODO(), &ec2.DescribeRegionsInput{}, retryOpt)
 	if err != nil {
 		return nil, fmt.Errorf("`client.DescribeRegions()` failed: %w", err)
 	}
@@ -59,6 +64,11 @@ func getNameTagValue(tags []types.Tag) string {
 
 func getAwsInstanceSync(region string, filter ...types.Filter) ([]instanceInfo, error) {
 	baseTime := time.Now()
+
+	retryOpt := func(opt *ec2.Options) {
+		opt.RetryMaxAttempts = 3
+		opt.RetryMode = aws.RetryModeStandard
+	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(region))
 	if err != nil {
@@ -91,9 +101,7 @@ func getAwsInstanceSync(region string, filter ...types.Filter) ([]instanceInfo, 
 
 		client := ec2.NewFromConfig(cfg)
 
-		obj, err := client.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{
-			Filters: f,
-		})
+		obj, err := client.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{Filters: f}, retryOpt)
 		if err != nil {
 			return nil, fmt.Errorf("`client.DescribeInstances()` failed: %w", err)
 		}
@@ -121,6 +129,11 @@ func getAwsInstanceSync(region string, filter ...types.Filter) ([]instanceInfo, 
 func getAwsInstanceAsync(region string, filter ...types.Filter) ([]instanceInfo, error) {
 	baseTime := time.Now()
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	retryOpt := func(opt *ec2.Options) {
+		opt.RetryMaxAttempts = 3
+		opt.RetryMode = aws.RetryModeStandard
+	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(region))
 	if err != nil {
@@ -166,9 +179,7 @@ func getAwsInstanceAsync(region string, filter ...types.Filter) ([]instanceInfo,
 
 			client := ec2.NewFromConfig(cfg)
 
-			obj, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-				Filters: f,
-			})
+			obj, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{Filters: f}, retryOpt)
 			if err != nil {
 				errorCh <- fmt.Errorf("`client.DescribeInstances()` failed: %w", err)
 				return
@@ -228,6 +239,11 @@ func getAwsInstanceAsync2(region string, filter ...types.Filter) ([]instanceInfo
 	baseTime := time.Now()
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
+	retryOpt := func(opt *ec2.Options) {
+		opt.RetryMaxAttempts = 3
+		opt.RetryMode = aws.RetryModeStandard
+	}
+
 	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(region))
 	if err != nil {
 		return nil, fmt.Errorf("`config.LoadDefaultConfig()` failed: %w", err)
@@ -265,9 +281,7 @@ func getAwsInstanceAsync2(region string, filter ...types.Filter) ([]instanceInfo
 
 			client := ec2.NewFromConfig(cfg)
 
-			obj, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-				Filters: f,
-			})
+			obj, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{Filters: f}, retryOpt)
 			if err != nil {
 				return fmt.Errorf("`client.DescribeInstances()` failed: %w", err)
 			}
