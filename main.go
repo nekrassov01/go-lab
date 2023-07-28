@@ -1,6 +1,11 @@
 package main
 
-import "os"
+import (
+	"context"
+	"os"
+
+	"github.com/aws/aws-sdk-go-v2/config"
+)
 
 const (
 	name   = "go-lab"
@@ -8,24 +13,38 @@ const (
 )
 
 func main() {
-	out, err := getAwsInstanceAsync(region)
-	if err != nil {
-		printError(err)
-		os.Exit(1)
-	}
-	printJson(out)
+	ctx := context.Background()
 
-	o2, err := getAwsInstanceAsync2(region)
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
 		printError(err)
 		os.Exit(1)
 	}
-	printJson(o2)
 
-	o3, err := getAwsInstanceSync(region)
-	if err != nil {
-		printError(err)
-		os.Exit(1)
-	}
-	printJson(o3)
+	benchmark(func() {
+		out, err := getAwsInstanceAsync(ctx, &cfg)
+		if err != nil {
+			printError(err)
+			os.Exit(1)
+		}
+		printJson(out)
+	})
+
+	benchmark(func() {
+		out, err := getAwsInstanceAsync2(ctx, &cfg)
+		if err != nil {
+			printError(err)
+			os.Exit(1)
+		}
+		printJson(out)
+	})
+
+	benchmark(func() {
+		out, err := getAwsInstanceSync(ctx, &cfg)
+		if err != nil {
+			printError(err)
+			os.Exit(1)
+		}
+		printJson(out)
+	})
 }
