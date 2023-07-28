@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"golang.org/x/sync/errgroup"
@@ -78,12 +77,10 @@ func getAwsInstanceSync(ctx context.Context, cfg *aws.Config, filter ...types.Fi
 	var res []instanceInfo
 
 	for _, region := range regions {
-		cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
-		if err != nil {
-			return nil, err
-		}
+		ccfg := cfg.Copy()
+		ccfg.Region = region
 
-		client := ec2.NewFromConfig(cfg)
+		client := ec2.NewFromConfig(ccfg)
 
 		obj, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{Filters: f}, retryOpt)
 		if err != nil {
@@ -138,13 +135,10 @@ func getAwsInstanceAsync(ctx context.Context, cfg *aws.Config, filter ...types.F
 		go func(region string) {
 			defer wg.Done()
 
-			cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
-			if err != nil {
-				ech <- err
-				return
-			}
+			ccfg := cfg.Copy()
+			ccfg.Region = region
 
-			client := ec2.NewFromConfig(cfg)
+			client := ec2.NewFromConfig(ccfg)
 
 			obj, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{Filters: f}, retryOpt)
 			if err != nil {
@@ -225,12 +219,10 @@ func getAwsInstanceAsync2(ctx context.Context, cfg *aws.Config, filter ...types.
 		region := region
 
 		eg.Go(func() error {
-			cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
-			if err != nil {
-				return err
-			}
+			ccfg := cfg.Copy()
+			ccfg.Region = region
 
-			client := ec2.NewFromConfig(cfg)
+			client := ec2.NewFromConfig(ccfg)
 
 			obj, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{Filters: f}, retryOpt)
 			if err != nil {
